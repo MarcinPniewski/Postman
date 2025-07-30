@@ -15,8 +15,8 @@ W przypadku uruchomienia z linii komend logi z przebiegu zostają umieszczone w 
 
 ## Struktura projektu
 - `project/` - pliki projektów Postman (.json)
- - `Testy aplikacji testowej.postman_collection.json` – definicja kolekcji Postman zawierająca zapytania i testy
- - `Testy aplikacji testowej.postman_environment.json` – środowisko zdefiniowane na potrzeby testów (zmienna `BaseURL`)
+  - `Testy aplikacji testowej.postman_collection.json` – definicja kolekcji Postman zawierająca zapytania i testy
+  - `Testy aplikacji testowej.postman_environment.json` – środowisko zdefiniowane na potrzeby testów (zmienna `BaseURL`)
 - `reports/` - raporty z wykonanych testów CLI
 
 ## Wymagania
@@ -24,12 +24,12 @@ W przypadku uruchomienia z linii komend logi z przebiegu zostają umieszczone w 
 - Newman (do uruchamiania testów z lini komend)
 - reporter newman-reporter-htmlextra (do szczegółowego raportu z testów z lini komend)
 - system MacOS/Linux/Windows
-- uruchomiona zaślepka przykładowej aplikacji testowej ([MockService](https://github.com/MarcinPniewski/MockService)) pod adresem zdefiniowanym w zmiennej BaseURL (domyślnie http://localhost:8089)
+- uruchomiona zaślepka przykładowej aplikacji testowej ([MockService](https://github.com/MarcinPniewski/MockService)) pod adresem zdefiniowanym w zmiennej BaseURL (domyślnie `http://localhost:8089`)
 
 ## Uruchamianie testów w Postman GUI
 - zaimportować:
- - kolekcję: _Testy aplikacji testowej.postman_collection.json_
- - środowisko: _Testy aplikacji testowej.postman_environment.json_
+  - kolekcję: _Testy aplikacji testowej.postman_collection.json_
+  - środowisko: _Testy aplikacji testowej.postman_environment.json_
 - wybrać środowisko _Testy aplikacji testowej_ z listy Environment.
 - uruchomić całą kolekcję `Testy aplikacji testowej`
 - przejrzeć logi w “Console”
