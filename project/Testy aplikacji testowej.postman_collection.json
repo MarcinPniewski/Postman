@@ -1,0 +1,476 @@
+{
+	"info": {
+		"_postman_id": "c0f5ed21-5766-4852-b735-d3ef0c5e72a1",
+		"name": "Testy aplikacji testowej",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "46788380",
+		"_collection_link": "https://marcinpniewski-4033129.postman.co/workspace/Marcin-Pniewski's-Workspace~dcdb66fd-756b-45b7-83cd-4d50fb8723ef/collection/46788380-c0f5ed21-5766-4852-b735-d3ef0c5e72a1?action=share&source=collection_link&creator=46788380"
+	},
+	"item": [
+		{
+			"name": "Aplikacja testowa",
+			"item": [
+				{
+					"name": "statusZadania",
+					"item": [
+						{
+							"name": "Test Steps",
+							"item": [
+								{
+									"name": "Odpowiedź-OK",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"const body = pm.response.text().trim();",
+													"const kod = pm.request.url.query",
+													"    .find(p => p.key === \"kod\")?.value?.trim() || \"\";",
+													"",
+													"pm.test(\"Valid HTTP Status Codes\", () => pm.response.to.have.status(200));",
+													"pm.test(\"Pierwsza linia\", () => pm.expect(body).to.include(\"Task summary Generated At\"));",
+													"pm.test(\"Naglowek\", () => pm.expect(body).to.include(\"|Kod                                                   |Status   |Cron                          |Start               |Koniec              |Ostatnie OK         |\"));",
+													"pm.test(\"Kod zadania\", () => pm.expect(body).to.include(\"|\" + kod));",
+													"pm.test(\"Podsumowanie\", () => pm.expect(body).to.include(\"Podsumowanie\"));",
+													"",
+													"// Ogólne asercje nieprzerywające dalszej logiki",
+													"if (body.includes(\"FAILED\")) {",
+													"    console.error(\"Znaleziono słowo 'FAILED' w całej odpowiedzi.\");",
+													"    pm.test(\"Brak \\\"FAILED\\\"\", () => {",
+													"        pm.expect.fail(\"Znaleziono słowo 'FAILED' w całej odpowiedzi.\");",
+													"    });",
+													"} else {",
+													"    pm.test(\"Brak \\\"FAILED\\\"\", () => pm.expect(true).to.be.true);",
+													"}",
+													"",
+													"if (body.includes(\"Failures\")) {",
+													"    console.error(\"Znaleziono słowo 'Failures' w całej odpowiedzi.\");",
+													"    pm.test(\"Brak \\\"Failures\\\"\", () => {",
+													"        pm.expect.fail(\"Znaleziono słowo 'Failures' w całej odpowiedzi.\");",
+													"    });",
+													"} else {",
+													"    pm.test(\"Brak \\\"Failures\\\"\", () => pm.expect(true).to.be.true);",
+													"}",
+													"",
+													"if (!body) {",
+													"    console.error(\"Odpowiedź serwera jest pusta. Przerywam wykonanie.\");",
+													"    pm.test(\"Brak treści w odpowiedzi serwera\", () => {",
+													"        pm.expect.fail(\"Brak treści w odpowiedzi serwera.\");",
+													"    });",
+													"    return;",
+													"}",
+													"",
+													"const linieOdpowiedzi = body.split('\\n');",
+													"",
+													"// Sprawdzenie linii z kodem zadania",
+													"const liniaZKodem = linieOdpowiedzi.find(linia => linia.includes(\"|\" + kod));",
+													"if (!liniaZKodem) {",
+													"    console.error(`Nie znaleziono linii zawierającej kod zadania: ${kod}`);",
+													"    pm.test(\"Linia z kodem zadania istnieje\", () => {",
+													"        pm.expect.fail(`Brak linii z kodem zadania: ${kod}`);",
+													"    });",
+													"    return;",
+													"}",
+													"",
+													"// Szczegółowe filtrowanie linii zgodnie z Groovy (SoapUI)",
+													"const liniaZsoon = linieOdpowiedzi.filter(linia => linia.includes('No information yet. Please try again soon!'));",
+													"const linieZFailed = linieOdpowiedzi.filter(linia => linia.includes('FAILED') && !linia.includes(kod));",
+													"const linieZFailures = linieOdpowiedzi.filter(linia => linia.includes('Failures'));",
+													"const linieZRunNew = linieOdpowiedzi.filter(linia => linia.includes('|RUNNING') || linia.includes('|NEW'));",
+													"",
+													"// Szczegóły błędów specjalnych",
+													"let linieZFailuresSpecjalne = [];",
+													"if (linieZFailures.length > 0) {",
+													"    linieZFailuresSpecjalne = linieOdpowiedzi.filter(linia =>",
+													"        linia.includes('#') ||",
+													"        linia.includes('MAIN:') ||",
+													"        linia.includes('READER:') ||",
+													"        linia.includes('Caused by:') ||",
+													"        linia.includes('WRITER:')",
+													"    );",
+													"}",
+													"",
+													"// Główna logika 1:1 zgodna z Groovy (SoapUI)",
+													"if (liniaZsoon.length === 1) {",
+													"    console.warn(`Należy ponowić sprawdzenie statusu zadania ${kod}`);",
+													"    pm.test(\"Brak komunikatu 'try again soon'\", () => {",
+													"        pm.expect.fail(`Znaleziono 'try again soon' dla zadania ${kod}`);",
+													"    });",
+													"",
+													"} else if (linieZRunNew.length > 0) {",
+													"    console.warn(`Nie wszystkie kroki zostały zakończone dla zadania ${kod}`);",
+													"    pm.test(\"Wszystkie kroki zakończone\", () => {",
+													"        pm.expect.fail(`Znaleziono kroki RUNNING/NEW dla zadania ${kod}`);",
+													"    });",
+													"",
+													"} else if (linieZFailed.length > 0) {",
+													"    if (linieZFailed.length === 1) {",
+													"        console.error(`Wystąpił błąd 'FAILED' dla zadania ${kod}:`);",
+													"        console.error(`      ${linieZFailed[0]}`);",
+													"    } else {",
+													"        console.error(`Wystąpiły błędy 'FAILED' dla zadania ${kod}:`);",
+													"        linieZFailed.forEach(linia => console.error(`      ${linia}`));",
+													"    }",
+													"",
+													"    // Szczegóły  (Failures)",
+													"    if (linieZFailuresSpecjalne.length > 0) {",
+													"        console.error(\"Szczegóły:\");",
+													"        linieZFailuresSpecjalne.forEach(linia => console.error(`      ${linia}`));",
+													"    }",
+													"",
+													"    // Zgłoszenie szczegółowego błędu jako failed test",
+													"    pm.test(\"Brak błędów FAILED\", () => {",
+													"        pm.expect.fail(`Znaleziono linie FAILED dla zadania ${kod}`);",
+													"    });",
+													"",
+													"} else {",
+													"    console.log(`Nie wystąpił błąd 'FAILED' dla zadania ${kod}`);",
+													"    pm.test(\"Brak błędów FAILED\", () => {",
+													"        pm.expect(true).to.be.true;",
+													"    });",
+													"}"
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{BaseURL}}/statusZadania?kod=zadanie_1",
+											"host": [
+												"{{BaseURL}}"
+											],
+											"path": [
+												"statusZadania"
+											],
+											"query": [
+												{
+													"key": "kod",
+													"value": "zadanie_1"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Odpowiedź-BŁĄD",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"const body = pm.response.text().trim();",
+													"const kod = pm.request.url.query",
+													"    .find(p => p.key === \"kod\")?.value?.trim() || \"\";",
+													"",
+													"pm.test(\"Valid HTTP Status Codes\", () => pm.response.to.have.status(200));",
+													"pm.test(\"Pierwsza linia\", () => pm.expect(body).to.include(\"Task summary Generated At\"));",
+													"pm.test(\"Naglowek\", () => pm.expect(body).to.include(\"|Kod                                                   |Status   |Cron                          |Start               |Koniec              |Ostatnie OK         |\"));",
+													"pm.test(\"Kod zadania\", () => pm.expect(body).to.include(\"|\" + kod));",
+													"pm.test(\"Podsumowanie\", () => pm.expect(body).to.include(\"Podsumowanie\"));",
+													"",
+													"// Ogólne asercje nieprzerywające dalszej logiki",
+													"if (body.includes(\"FAILED\")) {",
+													"    console.error(\"Znaleziono słowo 'FAILED' w całej odpowiedzi.\");",
+													"    pm.test(\"Brak \\\"FAILED\\\"\", () => {",
+													"        pm.expect.fail(\"Znaleziono słowo 'FAILED' w całej odpowiedzi.\");",
+													"    });",
+													"} else {",
+													"    pm.test(\"Brak \\\"FAILED\\\"\", () => pm.expect(true).to.be.true);",
+													"}",
+													"",
+													"if (body.includes(\"Failures\")) {",
+													"    console.error(\"Znaleziono słowo 'Failures' w całej odpowiedzi.\");",
+													"    pm.test(\"Brak \\\"Failures\\\"\", () => {",
+													"        pm.expect.fail(\"Znaleziono słowo 'Failures' w całej odpowiedzi.\");",
+													"    });",
+													"} else {",
+													"    pm.test(\"Brak \\\"Failures\\\"\", () => pm.expect(true).to.be.true);",
+													"}",
+													"",
+													"if (!body) {",
+													"    console.error(\"Odpowiedź serwera jest pusta. Przerywam wykonanie.\");",
+													"    pm.test(\"Brak treści w odpowiedzi serwera\", () => {",
+													"        pm.expect.fail(\"Brak treści w odpowiedzi serwera.\");",
+													"    });",
+													"    return;",
+													"}",
+													"",
+													"const linieOdpowiedzi = body.split('\\n');",
+													"",
+													"// Sprawdzenie linii z kodem zadania",
+													"const liniaZKodem = linieOdpowiedzi.find(linia => linia.includes(\"|\" + kod));",
+													"if (!liniaZKodem) {",
+													"    console.error(`Nie znaleziono linii zawierającej kod zadania: ${kod}`);",
+													"    pm.test(\"Linia z kodem zadania istnieje\", () => {",
+													"        pm.expect.fail(`Brak linii z kodem zadania: ${kod}`);",
+													"    });",
+													"    return;",
+													"}",
+													"",
+													"// Szczegółowe filtrowanie linii zgodnie z Groovy (SoapUI)",
+													"const liniaZsoon = linieOdpowiedzi.filter(linia => linia.includes('No information yet. Please try again soon!'));",
+													"const linieZFailed = linieOdpowiedzi.filter(linia => linia.includes('FAILED') && !linia.includes(kod));",
+													"const linieZFailures = linieOdpowiedzi.filter(linia => linia.includes('Failures'));",
+													"const linieZRunNew = linieOdpowiedzi.filter(linia => linia.includes('|RUNNING') || linia.includes('|NEW'));",
+													"",
+													"// Szczegóły błędów specjalnych",
+													"let linieZFailuresSpecjalne = [];",
+													"if (linieZFailures.length > 0) {",
+													"    linieZFailuresSpecjalne = linieOdpowiedzi.filter(linia =>",
+													"        linia.includes('#') ||",
+													"        linia.includes('MAIN:') ||",
+													"        linia.includes('READER:') ||",
+													"        linia.includes('Caused by:') ||",
+													"        linia.includes('WRITER:')",
+													"    );",
+													"}",
+													"",
+													"// Główna logika 1:1 zgodna z Groovy (SoapUI)",
+													"if (liniaZsoon.length === 1) {",
+													"    console.warn(`Należy ponowić sprawdzenie statusu zadania ${kod}`);",
+													"    pm.test(\"Brak komunikatu 'try again soon'\", () => {",
+													"        pm.expect.fail(`Znaleziono 'try again soon' dla zadania ${kod}`);",
+													"    });",
+													"",
+													"} else if (linieZRunNew.length > 0) {",
+													"    console.warn(`Nie wszystkie kroki zostały zakończone dla zadania ${kod}`);",
+													"    pm.test(\"Wszystkie kroki zakończone\", () => {",
+													"        pm.expect.fail(`Znaleziono kroki RUNNING/NEW dla zadania ${kod}`);",
+													"    });",
+													"",
+													"} else if (linieZFailed.length > 0) {",
+													"    if (linieZFailed.length === 1) {",
+													"        console.error(`Wystąpił błąd 'FAILED' dla zadania ${kod}:`);",
+													"        console.error(`      ${linieZFailed[0]}`);",
+													"    } else {",
+													"        console.error(`Wystąpiły błędy 'FAILED' dla zadania ${kod}:`);",
+													"        linieZFailed.forEach(linia => console.error(`      ${linia}`));",
+													"    }",
+													"",
+													"    // Szczegóły  (Failures)",
+													"    if (linieZFailuresSpecjalne.length > 0) {",
+													"        console.error(\"Szczegóły:\");",
+													"        linieZFailuresSpecjalne.forEach(linia => console.error(`      ${linia}`));",
+													"    }",
+													"",
+													"    // Zgłoszenie szczegółowego błędu jako failed test",
+													"    pm.test(\"Brak błędów FAILED\", () => {",
+													"        pm.expect.fail(`Znaleziono linie FAILED dla zadania ${kod}`);",
+													"    });",
+													"",
+													"} else {",
+													"    console.log(`Nie wystąpił błąd 'FAILED' dla zadania ${kod}`);",
+													"    pm.test(\"Brak błędów FAILED\", () => {",
+													"        pm.expect(true).to.be.true;",
+													"    });",
+													"}"
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{BaseURL}}/statusZadania?kod=zadanie_2",
+											"host": [
+												"{{BaseURL}}"
+											],
+											"path": [
+												"statusZadania"
+											],
+											"query": [
+												{
+													"key": "kod",
+													"value": "zadanie_2"
+												}
+											]
+										}
+									},
+									"response": []
+								},
+								{
+									"name": "Odpowiedź-BRAK",
+									"event": [
+										{
+											"listen": "test",
+											"script": {
+												"exec": [
+													"const body = pm.response.text().trim();",
+													"const kod = pm.request.url.query",
+													"    .find(p => p.key === \"kod\")?.value?.trim() || \"\";",
+													"",
+													"pm.test(\"Valid HTTP Status Codes\", () => pm.response.to.have.status(200));",
+													"pm.test(\"Pierwsza linia\", () => pm.expect(body).to.include(\"Task summary Generated At\"));",
+													"pm.test(\"Naglowek\", () => pm.expect(body).to.include(\"|Kod                                                   |Status   |Cron                          |Start               |Koniec              |Ostatnie OK         |\"));",
+													"pm.test(\"Kod zadania\", () => pm.expect(body).to.include(\"|\" + kod));",
+													"pm.test(\"Podsumowanie\", () => pm.expect(body).to.include(\"Podsumowanie\"));",
+													"",
+													"// Ogólne asercje nieprzerywające dalszej logiki",
+													"if (body.includes(\"FAILED\")) {",
+													"    console.error(\"Znaleziono słowo 'FAILED' w całej odpowiedzi.\");",
+													"    pm.test(\"Brak \\\"FAILED\\\"\", () => {",
+													"        pm.expect.fail(\"Znaleziono słowo 'FAILED' w całej odpowiedzi.\");",
+													"    });",
+													"} else {",
+													"    pm.test(\"Brak \\\"FAILED\\\"\", () => pm.expect(true).to.be.true);",
+													"}",
+													"",
+													"if (body.includes(\"Failures\")) {",
+													"    console.error(\"Znaleziono słowo 'Failures' w całej odpowiedzi.\");",
+													"    pm.test(\"Brak \\\"Failures\\\"\", () => {",
+													"        pm.expect.fail(\"Znaleziono słowo 'Failures' w całej odpowiedzi.\");",
+													"    });",
+													"} else {",
+													"    pm.test(\"Brak \\\"Failures\\\"\", () => pm.expect(true).to.be.true);",
+													"}",
+													"",
+													"if (!body) {",
+													"    console.error(\"Odpowiedź serwera jest pusta. Przerywam wykonanie.\");",
+													"    pm.test(\"Brak treści w odpowiedzi serwera\", () => {",
+													"        pm.expect.fail(\"Brak treści w odpowiedzi serwera.\");",
+													"    });",
+													"    return;",
+													"}",
+													"",
+													"const linieOdpowiedzi = body.split('\\n');",
+													"",
+													"// Sprawdzenie linii z kodem zadania",
+													"const liniaZKodem = linieOdpowiedzi.find(linia => linia.includes(\"|\" + kod));",
+													"if (!liniaZKodem) {",
+													"    console.error(`Nie znaleziono linii zawierającej kod zadania: ${kod}`);",
+													"    pm.test(\"Linia z kodem zadania istnieje\", () => {",
+													"        pm.expect.fail(`Brak linii z kodem zadania: ${kod}`);",
+													"    });",
+													"    return;",
+													"}",
+													"",
+													"// Szczegółowe filtrowanie linii zgodnie z Groovy (SoapUI)",
+													"const liniaZsoon = linieOdpowiedzi.filter(linia => linia.includes('No information yet. Please try again soon!'));",
+													"const linieZFailed = linieOdpowiedzi.filter(linia => linia.includes('FAILED') && !linia.includes(kod));",
+													"const linieZFailures = linieOdpowiedzi.filter(linia => linia.includes('Failures'));",
+													"const linieZRunNew = linieOdpowiedzi.filter(linia => linia.includes('|RUNNING') || linia.includes('|NEW'));",
+													"",
+													"// Szczegóły błędów specjalnych",
+													"let linieZFailuresSpecjalne = [];",
+													"if (linieZFailures.length > 0) {",
+													"    linieZFailuresSpecjalne = linieOdpowiedzi.filter(linia =>",
+													"        linia.includes('#') ||",
+													"        linia.includes('MAIN:') ||",
+													"        linia.includes('READER:') ||",
+													"        linia.includes('Caused by:') ||",
+													"        linia.includes('WRITER:')",
+													"    );",
+													"}",
+													"",
+													"// Główna logika 1:1 zgodna z Groovy (SoapUI)",
+													"if (liniaZsoon.length === 1) {",
+													"    console.warn(`Należy ponowić sprawdzenie statusu zadania ${kod}`);",
+													"    pm.test(\"Brak komunikatu 'try again soon'\", () => {",
+													"        pm.expect.fail(`Znaleziono 'try again soon' dla zadania ${kod}`);",
+													"    });",
+													"",
+													"} else if (linieZRunNew.length > 0) {",
+													"    console.warn(`Nie wszystkie kroki zostały zakończone dla zadania ${kod}`);",
+													"    pm.test(\"Wszystkie kroki zakończone\", () => {",
+													"        pm.expect.fail(`Znaleziono kroki RUNNING/NEW dla zadania ${kod}`);",
+													"    });",
+													"",
+													"} else if (linieZFailed.length > 0) {",
+													"    if (linieZFailed.length === 1) {",
+													"        console.error(`Wystąpił błąd 'FAILED' dla zadania ${kod}:`);",
+													"        console.error(`      ${linieZFailed[0]}`);",
+													"    } else {",
+													"        console.error(`Wystąpiły błędy 'FAILED' dla zadania ${kod}:`);",
+													"        linieZFailed.forEach(linia => console.error(`      ${linia}`));",
+													"    }",
+													"",
+													"    // Szczegóły  (Failures)",
+													"    if (linieZFailuresSpecjalne.length > 0) {",
+													"        console.error(\"Szczegóły:\");",
+													"        linieZFailuresSpecjalne.forEach(linia => console.error(`      ${linia}`));",
+													"    }",
+													"",
+													"    // Zgłoszenie szczegółowego błędu jako failed test",
+													"    pm.test(\"Brak błędów FAILED\", () => {",
+													"        pm.expect.fail(`Znaleziono linie FAILED dla zadania ${kod}`);",
+													"    });",
+													"",
+													"} else {",
+													"    console.log(`Nie wystąpił błąd 'FAILED' dla zadania ${kod}`);",
+													"    pm.test(\"Brak błędów FAILED\", () => {",
+													"        pm.expect(true).to.be.true;",
+													"    });",
+													"}"
+												],
+												"type": "text/javascript",
+												"packages": {}
+											}
+										}
+									],
+									"request": {
+										"method": "GET",
+										"header": [],
+										"url": {
+											"raw": "{{BaseURL}}/statusZadania?kod=zadanie_3",
+											"host": [
+												"{{BaseURL}}"
+											],
+											"path": [
+												"statusZadania"
+											],
+											"query": [
+												{
+													"key": "kod",
+													"value": "zadanie_3"
+												}
+											]
+										}
+									},
+									"response": []
+								}
+							]
+						}
+					],
+					"description": "TestCase generated for REST Resource [statusZadania] located at [/statusZadania]"
+				}
+			],
+			"description": "TestSuite generated for REST Service [Aplikacja testowa]"
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "BaseURL",
+			"value": "http://localhost:8089"
+		}
+	]
+}
